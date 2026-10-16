@@ -1,0 +1,27 @@
+[Unit]
+Description=BlackBerry Music Intelligence Service
+After=network.target navidrome.service
+Wants=navidrome.service
+
+[Service]
+Type=simple
+User=blackberry
+Group=blackberry
+WorkingDirectory=/mnt/music/script_music_reccomendations
+# NOTE: Update PATH if using virtual environment instead of system Python
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+# Use system Python. If using venv, change to: /mnt/music/script_music_reccomendations/venv/bin/python
+ExecStart=/usr/bin/python3 /mnt/music/script_music_reccomendations/run.py status
+Restart=on-failure
+RestartSec=30
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits
+MemoryLimit=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

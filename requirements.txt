@@ -1,0 +1,44 @@
+# BlackBerry Music Intelligence - Python Dependencies
+# Python 3.12+
+
+# Core dependencies
+toml>=0.10.2
+pydantic>=2.0.0
+python-dateutil>=2.8.2
+pytz>=2023.3
+
+# Database
+sqlite3  # Built-in, but listed for clarity
+
+# HTTP and API
+requests>=2.31.0
+httpx>=0.24.0  # Alternative async HTTP client
+
+# Audio and metadata
+mutagen>=1.47.0
+librosa>=0.10.0  # For audio feature extraction (optional, can be heavy)
+soundfile>=0.12.0  # Required by librosa
+
+# Music services (reusing from spotdl-env)
+ytmusicapi>=1.11.5
+spotipy>=2.26.0  # For Spotify integration if needed
+
+# LLM integration
+ollama>=0.1.0  # Ollama Python client
+
+# CLI and output
+rich>=13.0.0
+click>=8.1.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+
+# Utilities
+tqdm>=4.66.0  # Progress bars
+pathlib  # Built-in
+hashlib  # Built-in
+uuid  # Built-in
+json  # Built-in
+logging  # Built-in

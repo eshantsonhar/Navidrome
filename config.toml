@@ -1,0 +1,164 @@
+# BlackBerry Music Intelligence Configuration
+# This file contains all configurable parameters for the recommendation system
+
+[paths]
+# Base music directory (Linux path on BlackBerry)
+music_base = "/mnt/music"
+
+# Project directory
+project_dir = "/mnt/music/script_music_reccomendations"
+
+# Seed playlists (primary and secondary)
+seed_playlist_primary = "/mnt/music/Bored.m3u"
+seed_playlist_secondary = "/mnt/music/the better playlist.m3u"
+
+# Output directories and files
+recommendation_dir = "/mnt/music/daily recommendation"
+recommendation_playlist = "/mnt/music/daily_recommendation.m3u"
+top_100_playlist = "/mnt/music/top 100_english.m3u"
+
+# Database and data
+database_path = "/mnt/music/script_music_reccomendations/data/recommendations.db"
+cache_dir = "/mnt/music/script_music_reccomendations/data/cache"
+backup_dir = "/mnt/music/script_music_reccomendations/data/backups"
+log_dir = "/mnt/music/script_music_reccomendations/logs"
+
+# Memory file
+memory_file = "/mnt/music/script_music_reccomendations/memory.txt"
+
+[navidrome]
+# Navidrome server configuration
+base_url = "http://localhost:4533"
+# Authentication: use either username/password or API token
+# Leave username/password empty if using token auth
+username = ""
+password = ""
+# API token (if configured in Navidrome)
+api_token = ""
+# Subsonic API version (usually 1.16.1)
+api_version = "1.16.1"
+
+[ollama]
+# Ollama local LLM configuration
+base_url = "http://localhost:11434"
+# Model to use (e.g., "llama3.2:1b", "phi3:mini", "gemma2:2b")
+# Start with a small model suitable for Raspberry Pi 5
+model = "llama3.2:1b"
+# Timeout in seconds for LLM requests
+timeout = 60
+# Maximum context tokens (keep small for performance)
+max_tokens = 2048
+
+[chart]
+# YouTube Music Top 100 English chart configuration
+# Source: YouTube Music public playlist ID or URL
+# You can find playlist IDs from YouTube Music
+playlist_id = "PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI"
+# Refresh interval in hours
+refresh_interval_hours = 6
+# Maximum number of tracks to retrieve
+max_tracks = 100
+
+[recommendation]
+# Recommendation generation schedule
+# Daily generation time (24-hour format, timezone-aware)
+daily_generation_time = "08:00"
+# Timezone (e.g., "Asia/Kolkata", "UTC")
+timezone = "Asia/Kolkata"
+
+# Seven-day repeat prevention
+repeat_cooldown_days = 7
+
+# Playlist weighting
+# Higher weight = stronger positive signal
+seed_playlist_primary_weight = 1.0
+seed_playlist_secondary_weight = 1.5
+
+# Artist diversity
+# Maximum consecutive tracks from same artist (0 = no limit)
+max_consecutive_same_artist = 2
+# Maximum percentage of playlist from single artist (0-100)
+max_artist_percentage = 25
+
+# Recommendation scoring weights (must sum to 1.0)
+audio_similarity_weight = 0.40
+feedback_similarity_weight = 0.25
+seed_playlist_similarity_weight = 0.15
+discovery_relevance_weight = 0.10
+novelty_weight = 0.10
+
+# Playlist size
+min_playlist_size = 20
+max_playlist_size = 50
+
+[scheduling]
+# Synchronization intervals in minutes
+playlist_check_interval_minutes = 3
+feedback_sync_interval_minutes = 20
+
+# Retry configuration
+download_max_retries = 3
+download_retry_backoff_seconds = 60
+
+[audio_features]
+# Audio feature extraction settings
+# Enable/disable audio analysis
+enable_audio_analysis = true
+# Only analyze if duration > threshold (seconds)
+min_duration_seconds = 30
+# Maximum number of concurrent analyses
+max_concurrent_analyses = 2
+
+[download]
+# Music acquisition settings
+# Maximum concurrent downloads
+max_concurrent_downloads = 2
+# Download timeout in seconds
+download_timeout = 300
+# Maximum download size in MB
+max_download_size_mb = 50
+# Whether to automatically download missing tracks
+auto_download = false
+# Download source: "spotdl", "yt-dlp", or "none"
+download_source = "spotdl"
+
+[logging]
+# Logging configuration
+level = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+# Maximum log file size in MB before rotation
+max_log_size_mb = 10
+# Number of backup log files to keep
+log_backup_count = 5
+
+[database]
+# Database settings
+# Backup interval in hours
+backup_interval_hours = 24
+# Maximum number of backups to keep
+max_backups = 7
+# Enable integrity checks
+enable_integrity_check = true
+
+[feedback]
+# Feedback interpretation
+# Rating thresholds (1-5 scale)
+strong_negative_rating_max = 2  # 1-2 stars = strongly negative
+negative_rating = 3              # 3 stars = negative
+positive_rating_min = 4         # 4-5 stars = positive
+
+# Passive playback thresholds
+# Minimum play duration to count as completed (percentage)
+min_play_completion_percent = 80
+# Skip threshold (percentage of track duration)
+skip_threshold_percent = 30
+# Number of skips to treat as negative signal
+skip_negative_threshold = 3
+
+[security]
+# Security settings
+# Enable dry-run mode for testing (no actual writes)
+dry_run = true  # Set to false after manual testing is complete
+# Verify music mount before operations
+verify_mount = true
+# Expected mount point
+expected_mount = "/mnt/music"
