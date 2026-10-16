@@ -8,7 +8,7 @@ from typing import List, Dict, Optional, Set
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from config import get_config
+import config
 from database import Database
 from .feedback import FeedbackSystem, FeedbackState
 from .cooldown import CooldownEngine
@@ -32,7 +32,7 @@ class RankingEngine:
 
     def __init__(self, database: Database):
         self.database = database
-        self.config = get_config()
+        self.config = config.get_config()
         self.feedback = FeedbackSystem(database)
         self.cooldown = CooldownEngine(database)
 

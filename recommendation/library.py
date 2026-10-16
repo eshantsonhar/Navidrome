@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from mutagen import File
 from mutagen.id3 import ID3NoHeaderError
 
-from config import get_config
+import config
 from database import Database
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class MusicLibrary:
 
     def __init__(self, database: Database):
         self.database = database
-        self.config = get_config()
+        self.config = config.get_config()
 
     def compute_file_hash(self, file_path: str) -> str:
         """

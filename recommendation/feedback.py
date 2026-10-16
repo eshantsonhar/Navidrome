@@ -9,7 +9,7 @@ from typing import Optional, Dict, List
 from datetime import datetime, timezone
 from enum import Enum
 
-from config import get_config
+import config
 from database import Database
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class FeedbackSystem:
 
     def __init__(self, database: Database):
         self.database = database
-        self.config = get_config()
+        self.config = config.get_config()
 
     def record_feedback_event(
         self,

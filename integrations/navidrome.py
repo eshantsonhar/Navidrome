@@ -8,7 +8,7 @@ import requests
 from typing import Dict, List, Optional
 from datetime import datetime
 
-from config import get_config
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class NavidromeClient:
     """Client for Navidrome Subsonic API"""
 
     def __init__(self):
-        self.config = get_config()
+        self.config = config.get_config()
         self.base_url = self.config.navidrome.base_url
         self.api_version = self.config.navidrome.api_version
         self.username = self.config.navidrome.username

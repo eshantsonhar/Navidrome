@@ -10,7 +10,7 @@ from typing import List, Dict, Tuple, Optional
 from datetime import datetime
 from dataclasses import dataclass
 
-from config import get_config
+import config
 from database import Database
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class PlaylistMonitor:
 
     def __init__(self, database: Database):
         self.database = database
-        self.config = get_config()
+        self.config = config.get_config()
 
     def compute_file_hash(self, file_path: str) -> str:
         """

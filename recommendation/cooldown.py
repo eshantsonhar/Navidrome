@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from enum import Enum
 
 from pytz import timezone as tz
-from config import get_config
+import config
 from database import Database
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ class CooldownEngine:
 
     def __init__(self, database: Database):
         self.database = database
-        self.config = get_config()
+        self.config = config.get_config()
         self.timezone = tz(self.config.recommendation.timezone)
 
     def get_timezone_aware_now(self) -> datetime:

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Dict
 from datetime import datetime
 
-from config import get_config
+import config
 from database import Database
 from .cooldown import ExclusionType
 
@@ -20,7 +20,7 @@ class MemoryWriter:
 
     def __init__(self, database: Database):
         self.database = database
-        self.config = get_config()
+        self.config = config.get_config()
 
     def generate_memory_file(self, output_path: str = None) -> str:
         """

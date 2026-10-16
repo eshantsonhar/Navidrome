@@ -8,7 +8,7 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from dataclasses import dataclass
 
-from config import get_config
+import config
 from database import Database
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class ChartUpdater:
 
     def __init__(self, database: Database):
         self.database = database
-        self.config = get_config()
+        self.config = config.get_config()
 
     def refresh_chart(self) -> Dict[str, int]:
         """

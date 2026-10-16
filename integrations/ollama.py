@@ -13,7 +13,7 @@ try:
 except ImportError:
     requests = None
 
-from config import get_config
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class OllamaClient:
     """Client for Ollama local LLM"""
 
     def __init__(self):
-        self.config = get_config()
+        self.config = config.get_config()
         self.base_url = self.config.ollama.base_url
         self.model = self.config.ollama.model
         self.timeout = self.config.ollama.timeout
