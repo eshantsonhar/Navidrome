@@ -41,7 +41,7 @@ class OllamaConfig(BaseModel):
 
 
 class ChartConfig(BaseModel):
-    playlist_id: str = "PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI"
+    playlist_id: str = "spotify:6UeSakyzhiEt4NB3UAd6NQ"
     refresh_interval_hours: int = 6
     max_tracks: int = 100
 

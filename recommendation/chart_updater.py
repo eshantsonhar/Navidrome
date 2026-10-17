@@ -1,12 +1,13 @@
 """
-YouTube Music Top 100 chart updater
-Scrapes and maintains the English Top 100 chart
+Chart updater
+Scrapes and maintains chart playlists from various sources (YouTube Music, Spotify)
 """
 
 import logging
 from typing import List, Dict, Optional
 from datetime import datetime
 from dataclasses import dataclass
+from pathlib import Path
 
 import config
 from database import Database
@@ -21,10 +22,11 @@ class ChartEntry:
     artist: str
     rank: int
     video_id: str = ""
+    spotify_uri: str = ""
 
 
 class ChartUpdater:
-    """Updates Top 100 chart from YouTube Music"""
+    """Updates chart playlists from various sources (YouTube Music, Spotify)"""
 
     def __init__(self, database: Database):
         self.database = database
@@ -32,12 +34,12 @@ class ChartUpdater:
 
     def refresh_chart(self) -> Dict[str, int]:
         """
-        Refresh the Top 100 chart from YouTube Music
+        Refresh the chart from configured source
 
         Returns:
             Dictionary with refresh statistics
         """
-        logger.info("Refreshing Top 100 chart")
+        logger.info("Refreshing chart")
 
         stats = {
             'retrieved': 0,
@@ -47,8 +49,19 @@ class ChartUpdater:
         }
 
         try:
-            # Get chart entries from YouTube Music
-            entries = self._fetch_chart_from_youtube_music()
+            # Detect source type from playlist_id
+            playlist_id = self.config.chart.playlist_id
+
+            if playlist_id.startswith('spotify:'):
+                # Spotify playlist
+                entries = self._fetch_chart_from_spotify(playlist_id)
+                source_name = "Spotify Chart"
+                source_type = "spotify"
+            else:
+                # YouTube Music playlist (default)
+                entries = self._fetch_chart_from_youtube_music()
+                source_name = "YouTube Music Top 100 English"
+                source_type = "youtube_music"
 
             if not entries:
                 logger.error("No chart entries retrieved")
@@ -57,19 +70,19 @@ class ChartUpdater:
             stats['retrieved'] = len(entries)
 
             # Register chart source
-            self._register_chart_source()
+            self._register_chart_source(source_name, source_type, playlist_id)
 
             # Process entries
             for entry in entries:
                 try:
-                    self._process_chart_entry(entry)
+                    self._process_chart_entry(entry, source_name)
                     stats['added'] += 1
                 except Exception as e:
                     logger.error(f"Error processing chart entry {entry.title}: {e}")
                     stats['failed'] += 1
 
             # Update last refresh time
-            self._update_last_refresh_time()
+            self._update_last_refresh_time(source_name)
 
             logger.info(f"Chart refresh complete: {stats}")
             return stats
@@ -131,33 +144,82 @@ class ChartUpdater:
             logger.error(f"Error fetching chart from YouTube Music: {e}")
             return []
 
-    def _register_chart_source(self):
+    def _fetch_chart_from_spotify(self, playlist_id: str) -> List[ChartEntry]:
+        """
+        Fetch chart entries from Spotify using SpotifyScraper
+
+        Args:
+            playlist_id: Spotify playlist ID (with or without spotify: prefix)
+
+        Returns:
+            List of ChartEntry objects
+        """
+        try:
+            from spotify_scraper import SpotifyClient
+
+            # Remove spotify: prefix if present
+            clean_id = playlist_id.replace('spotify:', '')
+
+            with SpotifyClient() as client:
+                playlist = client.get_playlist(clean_id, max_tracks=self.config.chart.max_tracks)
+
+                if not playlist:
+                    logger.error(f"Could not retrieve playlist {clean_id}")
+                    return []
+
+                entries = []
+                for idx, entry in enumerate(playlist.tracks[:self.config.chart.max_tracks], 1):
+                    title = entry.track.name
+                    artists = entry.track.artists
+                    artist = artists[0].name if artists else 'Unknown'
+                    spotify_uri = entry.track.uri
+
+                    entries.append(ChartEntry(
+                        title=title,
+                        artist=artist,
+                        rank=idx,
+                        spotify_uri=spotify_uri
+                    ))
+
+                logger.info(f"Retrieved {len(entries)} entries from Spotify: {playlist.name}")
+                return entries
+
+        except ImportError:
+            logger.error("spotifyscraper not available, cannot fetch chart")
+            return []
+        except Exception as e:
+            logger.error(f"Error fetching chart from Spotify: {e}")
+            return []
+
+    def _register_chart_source(self, name: str, source_type: str, source_id: str):
         """Register chart source in database"""
         with self.database.transaction() as conn:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO chart_sources
                 (name, source_type, source_id, refresh_interval_hours, created_at)
-                VALUES ('YouTube Music Top 100 English', 'youtube_music', ?, ?, CURRENT_TIMESTAMP)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
                 """,
-                (self.config.chart.playlist_id, self.config.chart.refresh_interval_hours)
+                (name, source_type, source_id, self.config.chart.refresh_interval_hours)
             )
 
-    def _process_chart_entry(self, entry: ChartEntry):
+    def _process_chart_entry(self, entry: ChartEntry, source_name: str):
         """
         Process a single chart entry
 
         Args:
             entry: ChartEntry to process
+            source_name: Name of the chart source
         """
         with self.database.connect() as conn:
             # Get chart source ID
             cursor = conn.execute(
-                "SELECT id FROM chart_sources WHERE name = 'YouTube Music Top 100 English'"
+                "SELECT id FROM chart_sources WHERE name = ?",
+                (source_name,)
             )
             result = cursor.fetchone()
             if not result:
-                raise ValueError("Chart source not registered")
+                raise ValueError(f"Chart source {source_name} not registered")
             chart_source_id = result[0]
 
             # Check if track already exists in library
@@ -168,15 +230,23 @@ class ChartUpdater:
             track_result = cursor.fetchone()
             track_id = track_result[0] if track_result else None
 
+            # Determine source type from playlist_id
+            if self.config.chart.playlist_id.startswith('spotify:'):
+                source_type = 'spotify'
+                source_id_field = entry.spotify_uri if entry.spotify_uri else self.config.chart.playlist_id
+            else:
+                source_type = 'youtube_music'
+                source_id_field = self.config.chart.playlist_id
+
             # If track doesn't exist, create a discovery candidate
             if not track_id:
                 cursor = conn.execute(
                     """
                     INSERT OR IGNORE INTO discovery_candidates
                     (title, artist, source_type, source_id, source_rank, first_seen_at, last_seen_at)
-                    VALUES (?, ?, 'youtube_music', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                     """,
-                    (entry.title, entry.artist, self.config.chart.playlist_id, entry.rank)
+                    (entry.title, entry.artist, source_type, source_id_field, entry.rank)
                 )
             else:
                 # Track exists, update discovery candidate
@@ -185,12 +255,12 @@ class ChartUpdater:
                     INSERT OR REPLACE INTO discovery_candidates
                     (title, artist, source_type, source_id, source_rank, track_id, is_available,
                      first_seen_at, last_seen_at)
-                    VALUES (?, ?, 'youtube_music', ?, ?, ?, 1,
+                    VALUES (?, ?, ?, ?, ?, ?, 1,
                      COALESCE((SELECT first_seen_at FROM discovery_candidates
                                WHERE title = ? AND artist = ?), CURRENT_TIMESTAMP),
                      CURRENT_TIMESTAMP)
                     """,
-                    (entry.title, entry.artist, self.config.chart.playlist_id, entry.rank,
+                    (entry.title, entry.artist, source_type, source_id_field, entry.rank,
                      track_id, entry.title, entry.artist)
                 )
 
@@ -205,15 +275,16 @@ class ChartUpdater:
                     (chart_source_id, track_id, entry.rank)
                 )
 
-    def _update_last_refresh_time(self):
+    def _update_last_refresh_time(self, source_name: str):
         """Update last refresh time in database"""
         with self.database.transaction() as conn:
             conn.execute(
                 """
                 UPDATE chart_sources
                 SET last_refreshed_at = CURRENT_TIMESTAMP, last_refresh_successful = 1
-                WHERE name = 'YouTube Music Top 100 English'
-                """
+                WHERE name = ?
+                """,
+                (source_name,)
             )
 
     def get_current_chart(self) -> List[Dict]:
@@ -223,6 +294,12 @@ class ChartUpdater:
         Returns:
             List of chart entries with track info
         """
+        # Determine source name based on playlist_id
+        if self.config.chart.playlist_id.startswith('spotify:'):
+            source_name = "Spotify Chart"
+        else:
+            source_name = "YouTube Music Top 100 English"
+
         with self.database.connect() as conn:
             cursor = conn.execute(
                 """
@@ -230,13 +307,14 @@ class ChartUpdater:
                 FROM chart_snapshots cs
                 JOIN tracks t ON cs.track_id = t.id
                 JOIN chart_sources s ON cs.chart_source_id = s.id
-                WHERE s.name = 'YouTube Music Top 100 English'
+                WHERE s.name = ?
                 AND cs.snapshot_time = (
                     SELECT MAX(snapshot_time) FROM chart_snapshots
                     WHERE chart_source_id = s.id
                 )
                 ORDER BY cs.rank ASC
-                """
+                """,
+                (source_name,)
             )
             return [dict(row) for row in cursor.fetchall()]
 
@@ -247,13 +325,20 @@ class ChartUpdater:
         Returns:
             True if refresh is needed, False otherwise
         """
+        # Determine source name based on playlist_id
+        if self.config.chart.playlist_id.startswith('spotify:'):
+            source_name = "Spotify Chart"
+        else:
+            source_name = "YouTube Music Top 100 English"
+
         with self.database.connect() as conn:
             cursor = conn.execute(
                 """
                 SELECT last_refreshed_at, refresh_interval_hours
                 FROM chart_sources
-                WHERE name = 'YouTube Music Top 100 English'
-                """
+                WHERE name = ?
+                """,
+                (source_name,)
             )
             result = cursor.fetchone()
 

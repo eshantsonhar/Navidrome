@@ -22,6 +22,7 @@ soundfile>=0.12.0  # Required by librosa
 # Music services (reusing from spotdl-env)
 ytmusicapi>=1.11.5
 spotipy>=2.26.0  # For Spotify integration if needed
+spotifyscraper>=3.9.0  # Spotify playlist extraction without API
 
 # LLM integration
 ollama>=0.1.0  # Ollama Python client

@@ -50,10 +50,11 @@ timeout = 60
 max_tokens = 2048
 
 [chart]
-# YouTube Music Top 100 English chart configuration
-# Source: YouTube Music public playlist ID or URL
-# You can find playlist IDs from YouTube Music
-playlist_id = "PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI"
+# Chart configuration (supports Spotify and YouTube Music)
+# Source: Playlist ID
+# Spotify: Use full playlist ID (e.g., "6UeSakyzhiEt4NB3UAd6NQ" or "spotify:6UeSakyzhiEt4NB3UAd6NQ")
+# YouTube Music: Use YouTube Music playlist ID
+playlist_id = "spotify:6UeSakyzhiEt4NB3UAd6NQ"
 # Refresh interval in hours
 refresh_interval_hours = 6
 # Maximum number of tracks to retrieve
