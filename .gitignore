@@ -53,6 +53,9 @@ Thumbs.db
 logs/
 
 # Database
+data/recommendations.db
+data/cache/
+data/backups/*.db
 *.db
 *.sqlite
 *.sqlite3

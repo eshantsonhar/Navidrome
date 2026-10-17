@@ -1,0 +1,20 @@
+[Unit]
+Description=BlackBerry Music Intelligence - Chart Refresh Service
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=blackberry
+Group=blackberry
+WorkingDirectory=/mnt/music/script_music_reccomendations
+Environment="PATH=/tmp/blackberry-music-test-venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/tmp/blackberry-music-test-venv/bin/python3 /mnt/music/script_music_reccomendations/run.py refresh-chart
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Resource limits
+MemoryLimit=256M
+CPUQuota=25%

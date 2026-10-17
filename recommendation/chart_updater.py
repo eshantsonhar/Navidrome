@@ -8,6 +8,8 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
+import json
+import os
 
 import config
 from database import Database
@@ -83,6 +85,9 @@ class ChartUpdater:
 
             # Update last refresh time
             self._update_last_refresh_time(source_name)
+
+            # Save snapshot to persistent storage
+            self._save_snapshot(entries, source_name, source_type)
 
             logger.info(f"Chart refresh complete: {stats}")
             return stats
@@ -350,3 +355,61 @@ class ChartUpdater:
 
             time_since = (datetime.now() - last_refreshed).total_seconds() / 3600
             return time_since >= interval_hours
+
+    def _save_snapshot(self, entries: List[ChartEntry], source_name: str, source_type: str):
+        """Save chart snapshot to persistent storage for inspection"""
+        try:
+            # Determine snapshot directory
+            snapshots_dir = Path(self.config.paths.project_dir) / "data" / "snapshots"
+            snapshots_dir.mkdir(parents=True, exist_ok=True)
+
+            # Create filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{source_type}_chart_{timestamp}.json"
+            snapshot_path = snapshots_dir / filename
+
+            # Prepare snapshot data
+            snapshot_data = {
+                "source_name": source_name,
+                "source_type": source_type,
+                "playlist_id": self.config.chart.playlist_id,
+                "track_count": len(entries),
+                "extracted_at": datetime.now().isoformat(),
+                "entries": [
+                    {
+                        "rank": entry.rank,
+                        "title": entry.title,
+                        "artist": entry.artist,
+                        "spotify_uri": entry.spotify_uri if entry.spotify_uri else None,
+                        "video_id": entry.video_id if entry.video_id else None
+                    }
+                    for entry in entries
+                ]
+            }
+
+            # Write snapshot
+            with open(snapshot_path, 'w', encoding='utf-8') as f:
+                json.dump(snapshot_data, f, indent=2, ensure_ascii=False)
+
+            logger.info(f"Chart snapshot saved to {snapshot_path}")
+
+            # Keep only last 10 snapshots to avoid disk space issues
+            self._cleanup_old_snapshots(snapshots_dir, source_type, keep=10)
+
+        except Exception as e:
+            logger.error(f"Error saving chart snapshot: {e}")
+
+    def _cleanup_old_snapshots(self, snapshots_dir: Path, source_type: str, keep: int = 10):
+        """Remove old snapshots, keeping only the most recent N"""
+        try:
+            # Get all snapshots for this source type
+            pattern = f"{source_type}_chart_*.json"
+            snapshots = sorted(snapshots_dir.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
+
+            # Remove old ones
+            for old_snapshot in snapshots[keep:]:
+                old_snapshot.unlink()
+                logger.debug(f"Removed old snapshot: {old_snapshot}")
+
+        except Exception as e:
+            logger.error(f"Error cleaning up old snapshots: {e}")

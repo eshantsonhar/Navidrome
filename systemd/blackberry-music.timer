@@ -1,11 +1,9 @@
 [Unit]
-Description=BlackBerry Music Intelligence Timer
-Requires=blackberry-music.service
+Description=BlackBerry Music Intelligence - Chart Refresh Timer
+Requires=blackberry-music-chart.service
 
 [Timer]
-# Run daily at 8:00 AM
-OnCalendar=*-*-* 08:00:00
-# Also run every 6 hours for chart refresh
+# Run every 6 hours for chart refresh
 OnCalendar=*:0/6
 Persistent=true
 

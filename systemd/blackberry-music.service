@@ -8,10 +8,8 @@ Type=simple
 User=blackberry
 Group=blackberry
 WorkingDirectory=/mnt/music/script_music_reccomendations
-# NOTE: Update PATH if using virtual environment instead of system Python
-Environment="PATH=/usr/local/bin:/usr/bin:/bin"
-# Use system Python. If using venv, change to: /mnt/music/script_music_reccomendations/venv/bin/python
-ExecStart=/usr/bin/python3 /mnt/music/script_music_reccomendations/run.py status
+Environment="PATH=/tmp/blackberry-music-test-venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/tmp/blackberry-music-test-venv/bin/python3 /mnt/music/script_music_reccomendations/run.py status
 Restart=on-failure
 RestartSec=30
 
